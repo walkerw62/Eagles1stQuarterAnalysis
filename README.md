@@ -1,5 +1,5 @@
-# Eagles1stQuarterAnalysis
-Improving Offense Execution in 1st Quarter Gameplay
+# Eagles 1st Quarter Analysis
+Improving Eagle's Offense Execution in 1st Quarter Gameplay
 
   Transforming	data	into	useful	information	is vital	for	a	NFL	team’s ability	to	implement	
 strategies	and	make	key	football	related	decisions.	This is	why with	much	research	and	analysis
