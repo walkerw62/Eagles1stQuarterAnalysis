@@ -1,0 +1,132 @@
+
+###########         NFL Scrape Data         ############ 
+
+#installing nflscrapR
+#devtools::install_github(repo = "maksimhorowitz/nflscrapR", force = TRUE)
+
+#Load Packages
+library(devtools)
+library(XML)
+library(RCurl)
+library(bitops)
+library(nnet)
+library(magrittr)
+library(nflscrapR)
+
+
+games2016 <-season_games(2016, Weeks = 16)
+
+boxscore2016 <- season_player_game(2016, Weeks = 16)
+nrow(games2016)
+
+#2016 Season Play by Play
+
+library(ggplot2)
+install.packages("dplyr")
+library(RcolorBrewer) 
+
+pbp.2016 <- season_play_by_play("2016")
+PointsQuarter <- read.csv("2016 Points Per Quarter.csv")
+
+str(pbp.2016)
+
+#Creating Factors for variables
+pbp.2016$qtr <-factor(pbp.2016$qtr)
+pbp.2016$GameID <-factor(pbp.2016$GameID)
+pbp.2016$FirstDown <-factor(pbp.2016$FirstDown)
+pbp.2016$Touchdown <-factor(pbp.2016$Touchdown)
+pbp.2016$PlayType <-factor(pbp.2016$PlayType)
+pbp.2016$ReturnResult <-factor(pbp.2016$ReturnResult)
+
+
+
+################ Data Preprossessing #######################
+#Edit desc to display shotgun or Under the huddle
+write.csv(eagles.pbp.2016, file = "eaglespbp2016.csv")
+eagles.pbp.2016.2 <- read.csv("eaglespbp2016_2.csv")
+
+eagles.pbp.2016$desc <- as.character(eagles.pbp.2016$desc)
+pbp.2016$posteam[pbp.2016$posteam == "JAC"] <- "JAX"
+pbp.2016$posteam <- as.factor(pbp.2016$posteam)
+
+#Include sacks as Pass plays
+eagles.pbp.2016$PlayType <- as.character(eagles.pbp.2016$PlayType)
+eagles.pbp.2016$PlayType[eagles.pbp.2016$PlayType == "Sack"] <- "Pass"
+eagles.pbp.2016$PlayType <- as.factor(eagles.pbp.2016$PlayType)
+
+
+#2016 Eagles Run vs Pass comparison (Quarters) 
+eagles.pbp.2016 <- subset(pbp.2016, posteam == 'PHI'& PlayType=="Pass" & down!="NA"
+                                   |posteam == 'PHI'& PlayType=="Sack" & down!="NA"
+                                   |posteam == 'PHI'& PlayType=="Run" & down!="NA")
+
+
+eaglesoff.pbp.2016 <- subset(eagles.pbp.2016.2, PlayType=="Pass" & down!="NA"|posteam == 'PHI'& PlayType=="Sack" & down!="NA")
+eaglespass.pbp.2016 <- subset(eagles.pbp.2016.2, PlayType=="Pass")                         
+
+
+############# Plotting ##############
+
+ggplot(data = eagles.pbp.2016.2, aes(x=qtr, fill=desc))+ 
+   geom_bar(position = "dodge")+facet_grid(PlayType~.)+ scale_fill_manual(values = cols2)+theme_bw()+
+  labs(title="Play Call Comparison", x="Quarter", y="Offensive Plays")+coord_flip()+
+  theme()
+
+#1st Quarter TD Comparison (NFL) 
+pbpTDs.2016 <- subset(pbp.2016, PlayType=='Run'&Touchdown==1 & Fumble=='0'|PlayType == 'Pass' & Touchdown==1& InterceptionThrown=='0')
+pbpQ1TDs.2016 <- subset(pbpTDs.2016, qtr=="1")                   
+pbpQ1TDs.2016 <- within(pbpQ1TDs.2016,
+                        posteam <- factor(posteam,
+                                          levels=names(sort(table(posteam,
+pbp.eagles.TDs.2016 <- subset(pbpTDs.2016, posteam=="PHI")                                                                  decreasing=TRUE)))) 
+E<-ggplot(data = pbpQ1TDs.2016, aes(x=posteam, fill=posteam)) 
+Plot1<- E+geom_bar()+geom_hline(yintercept=(totalTDs/32), linetype="dashed", color="red", size=1)+
+  annotate("text", x="PHI",y=6, label = "4 TDs", color = "black")+
+  annotate("text", x="TB",y=9, label = "AVG = 8.2 TDS", color = "red")
+Plot1 +xlab("Teams") + ylab("TDs") + ggtitle("1st Quarter Offensive Touchdowns (NFL)")+
+  scale_fill_manual(values = cols)+theme_classic()+
+  theme(legend.position = "none",
+        legend.background = element_blank(),
+        legend.title = element_blank(),
+        plot.title = element_text(size = 20, margin = margin(b = 10)))
+                                                                                                                             
+f<-ggplot(data = pbp.eagles.TDs.2016, aes(x=qtr,fill=PlayType)) 
+Plot2<- f+geom_bar()
+Plot2 +labs(title="Eagles TDs per Quarter", x="Quarter", y="TDs")+
+  scale_fill_manual(values = cols2)+theme_bw()+
+  theme(plot.title = element_text(size = 20, margin = margin(b = 10)))+
+  annotate("text", x="1",y=2, label = "3 TDs", color = "black")+
+  annotate("text", x="1",y=3.5, label = "1 TDs", color = "black")+
+  annotate("text", x="2",y=2, label = "3 TDs", color = "black")+
+  annotate("text", x="2",y=7, label = "6 TDs", color = "black")+
+  annotate("text", x="3",y=2.5, label = "4 TDs", color = "black")+
+  annotate("text", x="3",y=9, label = "8 TDs", color = "black")+
+  annotate("text", x="4",y=4, label = "6 TDs", color = "black")+
+  annotate("text", x="4",y=6.5, label = "1 TDs", color = "black")
+totalTDs <-sum(as.numeric(pbpQ1TDs.2016$Touchdown=="1"))
+cols<- c("#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC","#006600","
+         #CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC",
+         "#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC",
+         "#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC",
+         "#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC","#CCCCCC",
+         "#CCCCCC","#CCCCCC","#CCCCCC")
+cols2<- c("#CCCCCC","#66CC66")
+cols3<- c("#999999","#66CC66")
+
+#Yards gained per play Boxplot 
+bp<- eaglesoff.pbp.2016 %>% filter()
+W<-ggplot(data = eagles.pbp.2016.2, aes(x=desc, y=Yards.Gained, fill =PlayType))
+W + geom_boxplot(alpha=.8)+
+  facet_grid(PlayType~qtr)+scale_fill_manual(values = cols2)+theme_bw()+
+  labs(title="Yards Gained Per Play (Quarter)", x="Formation", y="Yards Gained")+
+  theme(plot.title = element_text(size = 20, margin = margin(b = 10)))
+
+#3rd down efficency
+conversion3rd<- subset(eagles.pbp.2016.2, down=="3")
+converted3rd<- subset(eagles.pbp.2016.2, down=="3" & yards.gained>ydstogo)
+count(pbp.2016, posteam =="PHI" & down=="3" & FirstDown=="1"& qtr=="1")/count(pbp.2016, posteam =="PHI" & down=="3" & qtr=="1")
+
+count(eagles.pbp.2016.2, desc=="Under Center" & qtr=="1")/count(eagles.pbp.2016.2, qtr=="1")
+count(eagles.pbp.2016.2, desc=="Under Center" & qtr=="2")/count(eagles.pbp.2016.2, qtr=="2")
+count(eagles.pbp.2016.2, desc=="Under Center" & qtr=="3")/count(eagles.pbp.2016.2, qtr=="3")
+count(eagles.pbp.2016.2, desc=="Under Center" & qtr=="4")/count(eagles.pbp.2016.2, qtr=="4")
